@@ -12,6 +12,8 @@ DB_USER = "admincar"
 DB_PASSWORD = "1234car"
 DB_PORT = "5432"
 SSL_MODE = 'require' 
+
+
 try:
     conn = psycopg2.connect(
         host=DB_HOST,

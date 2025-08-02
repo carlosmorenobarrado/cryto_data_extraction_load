@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cryto-data-ext-ld-cronjob
+  namespace: default # O el namespace que uses con ArgoCD
+  labels:
+    app: cryto-data-ext-ld
+spec:
+  schedule: "*/5 * * * *" # O tu horario deseado
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: cryto-data-ext-ld
+            image: carlosmoreno7/cryto-data-ext-ld:latest # ¡Asegúrate de que este tag sea correcto!
+            imagePullPolicy: Always # <--- ¡ESTO ES CLAVE!
+            envFrom: # Para inyectar las credenciales desde el Secret
+            - secretRef:
+                name: cryto-data-ext-ld-secrets
+          restartPolicy: OnFailure
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1

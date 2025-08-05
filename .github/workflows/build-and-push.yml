@@ -5,7 +5,7 @@ on:
     branches:
       - dev # Dispara el workflow cada vez que se haga un push a la rama 'main' (o tu rama principal)
     paths:
-      - 'cryto_data_ext_ld/**' # Solo se dispara si hay cambios en la carpeta telegram_scraper
+      - 'cryto_data_ext_ld/**' # Solo se dispara si hay cambios en la carpeta
 
 jobs:
   build-and-push-image:

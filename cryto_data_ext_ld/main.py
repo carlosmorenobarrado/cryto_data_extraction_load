@@ -30,6 +30,7 @@ except Exception as e:
 api_key = os.environ.get('API_KEY')
 api_secret = os.environ.get('API_SECRET')
 
+
 client = Client(
     api_key=api_key, 
     api_secret=api_secret, 
@@ -45,7 +46,7 @@ columns = [
     "Volume",
     "Close_time",
     "Quote_asset_volume",
-    "Number of trades",
+    "Number_of_trades",
     "Taker_buy_base_asset_volume",
     "Taker_buy_quote_asset_volume",
     "Ignore"
@@ -60,10 +61,9 @@ try:
     # 1. Obtener datos de Binance
     klines_btc = client.get_historical_klines("BTCUSDT", Client.KLINE_INTERVAL_1MINUTE, f"{delta*2} minutes ago UTC")
     df_btc = pd.DataFrame(klines_btc, columns=columns)
-    df_btc['Open_time'] = pd.to_datetime(df_btc['Open_time'], unit='ms')
-
+    df_btc[['Open_time', 'Close_time']] = df_btc[['Open_time', 'Close_time']].apply(pd.to_datetime, unit='ms')
     # 2. Consultar las filas que ya existen en la base de datos para evitar duplicados
-    existing_times_btc = pd.read_sql("SELECT DISTINCT Open_time FROM crypto.raw_btc_usdt_1m", engine)
+    existing_times_btc = pd.read_sql('SELECT DISTINCT "Open_time" FROM crypto.raw_btc_usdt_1m', engine)
     
     # 3. Filtrar el DataFrame para quedarnos solo con las filas nuevas
     df_btc_new = df_btc[~df_btc['Open_time'].isin(existing_times_btc['Open_time'])]
@@ -85,9 +85,9 @@ try:
     # --- Procesar ETH (repetimos la misma lógica) ---
     klines_eth = client.get_historical_klines("ETHUSDT", Client.KLINE_INTERVAL_1MINUTE, f"{delta*2} minutes ago UTC")
     df_eth = pd.DataFrame(klines_eth, columns=columns)
-    df_eth['Open_time'] = pd.to_datetime(df_eth['Open_time'], unit='ms')
+    df_eth[['Open_time', 'Close_time']] = df_eth[['Open_time', 'Close_time']].apply(pd.to_datetime, unit='ms')
 
-    existing_times_eth = pd.read_sql("SELECT DISTINCT Open_time FROM crypto.raw_eth_usdt_1m", engine)
+    existing_times_eth = pd.read_sql('SELECT DISTINCT "Open_time" FROM crypto.raw_eth_usdt_1m', engine)
     df_eth_new = df_eth[~df_eth['Open_time'].isin(existing_times_eth['Open_time'])]
 
     if not df_eth_new.empty:

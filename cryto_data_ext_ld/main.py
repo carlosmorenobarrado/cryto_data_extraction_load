@@ -64,12 +64,12 @@ try:
     df_btc = pd.DataFrame(prices_last_delta_m, columns=columns)
     for col in ["Open_time", "Close_time"]:
         df_btc[col] = pd.to_datetime(df_btc[col], unit='ms')
-    conn.execute("INSERT INTO main.raw_btc_usdt_1m SELECT * FROM df_btc where Open_time not in (select distinct Open_time from raw_btc_usdt_1m)")
+    conn.execute("INSERT INTO crypto.raw_btc_usdt_1m SELECT * FROM df_btc where Open_time not in (select distinct Open_time from crypto.raw_btc_usdt_1m)")
     prices_last_delta_m = client.get_historical_klines("ETHUSDT", Client.KLINE_INTERVAL_1MINUTE, f"{delta*2} minutes ago UTC")
     df_eth = pd.DataFrame(prices_last_delta_m, columns=columns)
     for col in ["Open_time", "Close_time"]:
         df_eth[col] = pd.to_datetime(df_eth[col], unit='ms')
-    conn.execute("INSERT INTO main.raw_eth_usdt_1m SELECT * FROM df_eth where Open_time not in (select distinct Open_time from raw_eth_usdt_1m)")
+    conn.execute("INSERT INTO crypto.raw_eth_usdt_1m SELECT * FROM df_eth where Open_time not in (select distinct Open_time from crypto.raw_eth_usdt_1m)")
 
 except Exception as e:
     logging.error(f"Parece que hay un error: {e}")

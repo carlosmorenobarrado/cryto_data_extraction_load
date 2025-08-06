@@ -38,10 +38,10 @@ except psycopg2.Error as e:
 #CREATE TABLE crypto.decision(FechaHora VARCHAR, v_btc FLOAT, v_eth FLOAT, c_btc FLOAT, c_eth FLOAT);
 #''')
 cur.execute('''
-CREATE TABLE crypto.raw_btc_usdt_1m (Open_time TIMESTAMP, Open FLOAT, High FLOAT, Low FLOAT, "Close" FLOAT, Volume FLOAT, Close_time TIMESTAMP, Quote_asset_volume FLOAT, Number_of_trades INTEGER, Taker_buy_base_asset_volume FLOAT, Taker_buy_quote_asset_volume FLOAT, "Ignore" INTEGER);
+CREATE TABLE crypto.raw_btc_usdt_1m ("Open_time" TIMESTAMP, "Open" FLOAT, "High" FLOAT, "Low" FLOAT, "Close" FLOAT, "Volume" FLOAT, "Close_time" TIMESTAMP, "Quote_asset_volume" FLOAT, "Number_of_trades" INTEGER, "Taker_buy_base_asset_volume" FLOAT, "Taker_buy_quote_asset_volume" FLOAT, "Ignore" INTEGER);
 ''')
 cur.execute(''' 
-CREATE TABLE crypto.raw_eth_usdt_1m (Open_time TIMESTAMP, Open FLOAT, High FLOAT, Low FLOAT, "Close" FLOAT, Volume FLOAT, Close_time TIMESTAMP, Quote_asset_volume FLOAT, Number_of_trades INTEGER, Taker_buy_base_asset_volume FLOAT, Taker_buy_quote_asset_volume FLOAT, "Ignore" INTEGER);
+CREATE TABLE crypto.raw_eth_usdt_1m ("Open_time" TIMESTAMP, "Open" FLOAT, "High" FLOAT, "Low" FLOAT, "Close" FLOAT, "Volume" FLOAT, "Close_time" TIMESTAMP, "Quote_asset_volume" FLOAT, "Number_of_trades" INTEGER, "Taker_buy_base_asset_volume" FLOAT, "Taker_buy_quote_asset_volume" FLOAT, "Ignore" INTEGER);
 ''')
 
 cur.close()

@@ -1,10 +1,9 @@
-import asyncio
 import logging
-import json # Importar la librería json
-from datetime import datetime, timezone
 import psycopg2
 import os
 
+# --- Configuración de Logging ---
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 DB_HOST = "192.168.1.49"
 DB_NAME = "criptodb"
@@ -27,6 +26,8 @@ try:
     
 except psycopg2.Error as e:
     print(f"Error al conectar o interactuar con la base de datos: {e}")
-# --- Configuración de Logging ---
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+# Cargar el secreto desde la variable de entorno
+# El nombre 'MI_SECRETO_EN_PYTHON' debe coincidir con el que definiste en el archivo .yml
+api_key = os.environ.get('BINANCE_API_KEY')
+api_secret = os.environ.get('BINANCE_API_SECRET')

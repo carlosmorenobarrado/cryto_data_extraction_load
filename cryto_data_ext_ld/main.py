@@ -5,8 +5,6 @@ from binance import Client
 import pandas as pd
 from sqlalchemy import create_engine
 
-
-
 # --- Configuración de Logging ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 

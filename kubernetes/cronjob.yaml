@@ -6,7 +6,7 @@ metadata:
   labels:
     app: cryto-data-ext-ld
 spec:
-  schedule: "*/5 * * * *" # O tu horario deseado
+  schedule: "* * * * * *" # O tu horario deseado
   jobTemplate:
     spec:
       template:

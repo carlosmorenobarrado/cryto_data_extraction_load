@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 import pandas as pd
 from sqlalchemy import create_engine, text
 from binance import Client
-
+import requests
 # --- Logging ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -222,30 +222,41 @@ def store_perp_metrics(symbol="BTCUSDT"):
 
 # ========= Liquidaciones (último minuto, BTCUSDT) =========
 def store_liquidations_last_min(symbol="BTCUSDT"):
+    """
+    Consulta liquidaciones en el último minuto usando el endpoint público de Binance Futures:
+    GET https://fapi.binance.com/fapi/v1/forceOrders
+    Sin API key, sin firma -> evita error -2015.
+    """
     now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
     start_ms = int((now - timedelta(minutes=1)).timestamp() * 1000)
     end_ms = int(now.timestamp() * 1000)
 
+    url = "https://fapi.binance.com/fapi/v1/forceOrders"
+    params = {
+        "symbol": symbol,
+        "startTime": start_ms,
+        "endTime": end_ms,
+        "limit": 1000
+    }
+
     try:
-        liqs = client.futures_liquidation_orders(symbol=symbol, startTime=start_ms, endTime=end_ms, limit=1000)
+        resp = requests.get(url, params=params, timeout=10)
+        resp.raise_for_status()
+        liqs = resp.json()
+
         count_liqs = len(liqs)
         qty_total = 0.0
         side_buy_qty = 0.0  # shorts liquidados => compra forzada (BUY)
         side_sell_qty = 0.0 # longs liquidados  => venta forzada (SELL)
 
         for o in liqs:
-            # algunos payloads vienen anidados en 'o'
-            if isinstance(o.get('o'), dict):
-                qty = float(o['o'].get('q', 0) or 0)
-                side = o['o'].get('S')
-            else:
-                qty = float(o.get('qty', 0) or 0)
-                side = o.get('side')
-
+            # Respuesta pública típica: {symbol, price, qty, side, time}
+            qty = float(o.get("qty", 0) or 0)
+            side = o.get("side")  # 'BUY' o 'SELL'
             qty_total += qty
-            if side == 'BUY':
+            if side == "BUY":
                 side_buy_qty += qty
-            elif side == 'SELL':
+            elif side == "SELL":
                 side_sell_qty += qty
 
         row = {
@@ -268,9 +279,10 @@ def store_liquidations_last_min(symbol="BTCUSDT"):
             ON CONFLICT (ts_window_start, symbol) DO NOTHING;
             """))
             conn.execute(text("DROP TABLE crypto._tmp_liq"))
-        logging.info("[liquidations_1m] +1 fila")
+        logging.info("[liquidations_1m] +1 fila (endpoint público)")
     except Exception as e:
-        logging.warning(f"Liquidaciones fallo {symbol}: {e}")
+        logging.warning(f"Liquidaciones fallo {symbol} (público): {e}")
+
 
 # ========= Agg trades (último minuto, REST) =========
 def store_agg_trades_last_min(symbol="BTCUSDT"):

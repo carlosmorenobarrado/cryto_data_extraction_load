@@ -286,7 +286,7 @@ def store_agg_trades_last_min(symbol="BTCUSDT"):
     end_ms = int(now.timestamp() * 1000)
 
     try:
-        trades = client.get_agg_trades(symbol=symbol, startTime=start_ms, endTime=end_ms)
+        trades = client.get_aggregate_trades(symbol=symbol, startTime=start_ms, endTime=end_ms)
         if not trades:
             logging.info(f"[agg_trades_1m] sin trades para {symbol} en el último minuto")
             return

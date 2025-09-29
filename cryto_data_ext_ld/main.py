@@ -227,7 +227,7 @@ def store_liquidations_last_min(symbol="BTCUSDT"):
     end_ms = int(now.timestamp() * 1000)
 
     try:
-        liqs = client.futures_force_orders(symbol=symbol, startTime=start_ms, endTime=end_ms, limit=1000)
+        liqs = client.futures_liquidation_orders(symbol=symbol, startTime=start_ms, endTime=end_ms, limit=1000)
         count_liqs = len(liqs)
         qty_total = 0.0
         side_buy_qty = 0.0  # shorts liquidados => compra forzada (BUY)

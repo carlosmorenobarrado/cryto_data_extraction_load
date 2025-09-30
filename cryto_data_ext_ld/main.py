@@ -17,8 +17,8 @@ DB_PASSWORD = "1234car"
 DB_PORT = "5432"
 
 # --- Binance keys (env) ---
-api_key = os.environ.get('API_KEY', '')
-api_secret = os.environ.get('API_SECRET', '')
+api_key = os.environ.get('BINANCE_API_KEY', '')
+api_secret = os.environ.get('BINANCE_API_SECRET', '')
 
 # --- Conexión SQLAlchemy ---
 db_url = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"

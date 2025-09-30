@@ -2,7 +2,6 @@ import logging
 import os
 import time
 from datetime import datetime, timedelta, timezone
-
 import pandas as pd
 from sqlalchemy import create_engine, text
 from binance import Client
@@ -223,15 +222,14 @@ def store_perp_metrics(symbol="BTCUSDT"):
 # ========= Liquidaciones (último minuto, BTCUSDT) =========
 def store_liquidations_last_min(symbol="BTCUSDT"):
     """
-    Consulta liquidaciones en el último minuto usando el endpoint público de Binance Futures:
-    GET https://fapi.binance.com/fapi/v1/forceOrders
-    Sin API key, sin firma -> evita error -2015.
+    Liquidaciones del último minuto usando endpoint público:
+    GET https://fapi.binance.com/fapi/v1/allForceOrders
     """
     now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
     start_ms = int((now - timedelta(minutes=1)).timestamp() * 1000)
     end_ms = int(now.timestamp() * 1000)
 
-    url = "https://fapi.binance.com/fapi/v1/forceOrders"
+    url = "https://fapi.binance.com/fapi/v1/allForceOrders"
     params = {
         "symbol": symbol,
         "startTime": start_ms,
@@ -242,15 +240,14 @@ def store_liquidations_last_min(symbol="BTCUSDT"):
     try:
         resp = requests.get(url, params=params, timeout=10)
         resp.raise_for_status()
-        liqs = resp.json()
+        liqs = resp.json() or []
 
         count_liqs = len(liqs)
         qty_total = 0.0
-        side_buy_qty = 0.0  # shorts liquidados => compra forzada (BUY)
-        side_sell_qty = 0.0 # longs liquidados  => venta forzada (SELL)
+        side_buy_qty = 0.0  # BUY = short liquidado (compra forzada)
+        side_sell_qty = 0.0 # SELL = long liquidado  (venta forzada)
 
         for o in liqs:
-            # Respuesta pública típica: {symbol, price, qty, side, time}
             qty = float(o.get("qty", 0) or 0)
             side = o.get("side")  # 'BUY' o 'SELL'
             qty_total += qty
@@ -279,9 +276,9 @@ def store_liquidations_last_min(symbol="BTCUSDT"):
             ON CONFLICT (ts_window_start, symbol) DO NOTHING;
             """))
             conn.execute(text("DROP TABLE crypto._tmp_liq"))
-        logging.info("[liquidations_1m] +1 fila (endpoint público)")
+        logging.info("[liquidations_1m] +1 fila (endpoint público allForceOrders)")
     except Exception as e:
-        logging.warning(f"Liquidaciones fallo {symbol} (público): {e}")
+        logging.warning(f"Liquidaciones fallo {symbol} (público allForceOrders): {e}")
 
 
 # ========= Agg trades (último minuto, REST) =========

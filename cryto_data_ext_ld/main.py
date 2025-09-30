@@ -220,36 +220,79 @@ def store_perp_metrics(symbol="BTCUSDT"):
         logging.warning(f"Perp metrics fallo {symbol}: {e}")
 
 # ========= Liquidaciones (último minuto, BTCUSDT) =========
+
+def _parse_liq_qty(o):
+    # Diferentes posibles nombres según versión
+    for k in ("qty", "q", "executedQty", "origQty"):
+        v = o.get(k)
+        if v not in (None, ""):
+            try:
+                return float(v)
+            except:
+                pass
+    # Algunos payloads anidan en 'o'
+    if isinstance(o.get("o"), dict):
+        for k in ("q", "qty", "executedQty", "origQty"):
+            v = o["o"].get(k)
+            if v not in (None, ""):
+                try:
+                    return float(v)
+                except:
+                    pass
+    return 0.0
+
+def _parse_liq_side(o):
+    # 'side' plano o en 'o' anidado
+    side = o.get("side")
+    if not side and isinstance(o.get("o"), dict):
+        side = o["o"].get("S") or o["o"].get("side")
+    return side  # 'BUY' o 'SELL'
+
+def _parse_liq_time_ms(o):
+    t = o.get("time") or o.get("T")
+    if t is None and isinstance(o.get("o"), dict):
+        t = o["o"].get("T") or o["o"].get("time")
+    return int(t) if t is not None else None
+
 def store_liquidations_last_min(symbol="BTCUSDT"):
     """
-    Liquidaciones del último minuto usando endpoint público:
-    GET https://fapi.binance.com/fapi/v1/allForceOrders
+    Liquidaciones último minuto vía endpoint público:
+    - Plan A: /fapi/v1/allForceOrders con startTime/endTime.
+    - Plan B: si 400, pedir sin tiempos (limit) y filtrar localmente por ventana.
     """
     now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
     start_ms = int((now - timedelta(minutes=1)).timestamp() * 1000)
     end_ms = int(now.timestamp() * 1000)
 
-    url = "https://fapi.binance.com/fapi/v1/allForceOrders"
-    params = {
-        "symbol": symbol,
-        "startTime": start_ms,
-        "endTime": end_ms,
-        "limit": 1000
-    }
+    base_url = "https://fapi.binance.com/fapi/v1/allForceOrders"
+    params = {"symbol": symbol, "startTime": start_ms, "endTime": end_ms, "limit": 1000}
 
     try:
-        resp = requests.get(url, params=params, timeout=10)
-        resp.raise_for_status()
-        liqs = resp.json() or []
+        resp = requests.get(base_url, params=params, timeout=10)
+        if resp.status_code == 400:
+            # Fallback: sin tiempos, luego filtramos localmente
+            fb_params = {"symbol": symbol, "limit": 1000}
+            fb = requests.get(base_url, params=fb_params, timeout=10)
+            try:
+                fb.raise_for_status()
+            except Exception as e2:
+                # Log del cuerpo para diagnosticar
+                raise RuntimeError(f"allForceOrders fallback 400->err: {e2}; body={fb.text[:300]}")
+            liqs = fb.json() or []
+            # Filtra a la ventana [start_ms, end_ms)
+            liqs = [o for o in liqs if (t := _parse_liq_time_ms(o)) is not None and start_ms <= t < end_ms]
+        else:
+            resp.raise_for_status()
+            liqs = resp.json() or []
 
         count_liqs = len(liqs)
         qty_total = 0.0
         side_buy_qty = 0.0  # BUY = short liquidado (compra forzada)
-        side_sell_qty = 0.0 # SELL = long liquidado  (venta forzada)
+        side_sell_qty = 0.0 # SELL = long  liquidado (venta forzada)
 
         for o in liqs:
-            qty = float(o.get("qty", 0) or 0)
-            side = o.get("side")  # 'BUY' o 'SELL'
+            qty = _parse_liq_qty(o)
+            side = _parse_liq_side(o)
             qty_total += qty
             if side == "BUY":
                 side_buy_qty += qty
@@ -276,7 +319,7 @@ def store_liquidations_last_min(symbol="BTCUSDT"):
             ON CONFLICT (ts_window_start, symbol) DO NOTHING;
             """))
             conn.execute(text("DROP TABLE crypto._tmp_liq"))
-        logging.info("[liquidations_1m] +1 fila (endpoint público allForceOrders)")
+        logging.info("[liquidations_1m] +1 fila (endpoint público allForceOrders, con fallback)")
     except Exception as e:
         logging.warning(f"Liquidaciones fallo {symbol} (público allForceOrders): {e}")
 

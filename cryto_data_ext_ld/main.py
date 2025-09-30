@@ -115,6 +115,7 @@ def ensure_tables():
         );
         """))
 
+
 def upsert_ohlcv(df, table_name: str):
     if df.empty:
         logging.info(f"[{table_name}] vacío.")
